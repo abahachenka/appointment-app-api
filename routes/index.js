@@ -1,7 +1,7 @@
 const clinicsRouter = require('./clinics');
-const userRouter = require('./user');
+const accountRouter = require('./account');
 
 module.exports = function(app, db) {
     clinicsRouter(app, db);
-    userRouter(app, db);
+    accountRouter(app, db);
 };
