@@ -8,9 +8,9 @@ module.exports = function(app, db) {
     app.get('/clinics', (req, res) => {
         collection.find({}).toArray((err, items) => {
             if (err) {
-                res.send(err);
+                res.status(500).send(err);
             } else {
-                res.send(items);
+                res.status(200).send(items);
             }
         });
     });
