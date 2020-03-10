@@ -6,7 +6,12 @@ module.exports = function(app, db) {
     const categoriesCollection = db.collection('doctor-categories');
     const doctorsCollection = db.collection('doctors');
 
-
+    /**
+      * The functions performs common api-request actions:
+      * - check token
+      * - pass callback on success
+      * - send error on failure
+      */
     const checkRequestToken = (req, res, cb) => {
         const token = req.headers['x-access-token'];
 
