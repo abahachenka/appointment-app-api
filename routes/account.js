@@ -27,7 +27,7 @@ module.exports = function(app, db) {
                     
                     if (result === true) {
                         const token = jwt.sign({ id: account._id }, SECRET, {
-                          expiresIn: 86400 // expires in 24 hours
+                            expiresIn: 86400 // expires in 24 hours
                         });
                         res.status(200).send({token: token});
 
@@ -43,9 +43,7 @@ module.exports = function(app, db) {
 
 
     app.post('/auth/account', (req, res) => {
-        // todo: replace with a proper header
-        // const token = req.headers['x-access-token'];
-        const token = req.body.token;
+        const token = req.headers['x-access-token'];
 
         jwt.verify(token, SECRET, function(err, decoded) {
             const id = decoded.id;

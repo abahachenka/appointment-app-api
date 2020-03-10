@@ -3,6 +3,7 @@ const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
 const { MongoClient } = require('mongodb');
+const cors = require('cors');
 
 // retrieving environmental variables
 require('dotenv').config();
@@ -16,6 +17,7 @@ const dbClient = new MongoClient(dbURL);
 const app = express();
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 
 try {
     MongoClient.connect(dbURL, { useUnifiedTopology: true }, (err, client) => {
