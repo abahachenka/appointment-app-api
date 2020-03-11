@@ -46,16 +46,25 @@ module.exports = function(app, db) {
         const token = req.headers['x-access-token'];
 
         jwt.verify(token, SECRET, function(err, decoded) {
-            const id = decoded.id;
-            const details = {"_id": ObjectID(id)};
+            if (decoded) {
+                const id = decoded.id;
+                const details = {"_id": ObjectID(id)};
 
-            clinicsCollection.findOne(details, (err, item) => {
+                clinicsCollection.findOne(details, (err, item) => {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else {
+                        res.status(200).send(item);
+                    }
+                });
+            } else {
                 if (err) {
-                    res.status(500).send(err);
-                } else {
-                    res.status(200).send(item);
-                }
-            });
+                     res.status(500).send(err);
+                 } else {
+                    res.status(500).send('Something went wrong');
+                 }
+            }
+            
         });
     });
 
