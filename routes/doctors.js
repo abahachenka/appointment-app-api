@@ -32,8 +32,10 @@ module.exports = function(app, db) {
         checkRequestToken(req, res, (decoded) => {
             if (req.body.categoryName) {
                 const id = decoded.id;
+                const alias = req.body.categoryName.toLowerCase().replace(/\s/gi, '-');
                 const category = {
                     categoryName: req.body.categoryName,
+                    categoryAlias: alias,
                     clinic_id: ObjectID(id)
                 };
 
@@ -59,6 +61,25 @@ module.exports = function(app, db) {
                     res.status(500).send(err);
                 } else {
                     res.status(200).send(items);
+                }
+            });
+        });
+    });
+
+    app.get('/doctor-categories/:categoryAlias', (req, res) => {
+        checkRequestToken(req, res, (decoded) => {
+            const clinicId = decoded.id;
+            const categoryAlias = req.params.categoryAlias;
+            const query = {
+                clinic_id: ObjectID(clinicId),
+                categoryName: categoryAlias
+            };
+
+            categoriesCollection.find(query).toArray((err, item) => {
+                if (err) {
+                    res.status(500).send(err);
+                } else {
+                    res.status(200).send(item);
                 }
             });
         });
