@@ -75,7 +75,7 @@ module.exports = function(app, db) {
                 categoryName: categoryAlias
             };
 
-            categoriesCollection.find(query).toArray((err, item) => {
+            categoriesCollection.findOne(query, (err, item) => {
                 if (err) {
                     res.status(500).send(err);
                 } else {
@@ -91,7 +91,7 @@ module.exports = function(app, db) {
             const categoryId = req.params.categoryId;
             const query = {
                 clinic_id: ObjectID(clinicId), 
-                category_id: categoryId
+                category_id: ObjectID(categoryId)
             };
 
             doctorsCollection.find(query).toArray((err, items) => {
@@ -115,7 +115,7 @@ module.exports = function(app, db) {
                 room: req.body.room,
                 email: req.body.email,
                 clinic_id: ObjectID(clinicId),
-                category_id : categoryId,
+                category_id : ObjectID(categoryId),
                 status: 'invited'
             };
 
@@ -125,7 +125,7 @@ module.exports = function(app, db) {
                 if (err) {
                     res.status(500).send(err);
                 } else {
-                    res.status(200).send(result.ops[0]);
+                    res.status(200).send({});
                 }
             });
         });
