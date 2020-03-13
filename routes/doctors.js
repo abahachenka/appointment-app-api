@@ -121,7 +121,8 @@ module.exports = function(app, db) {
 
             // todo: send email
 
-            doctorsCollection.insert(doctor, (err, record) => {
+            doctorsCollection.insert(doctor, (err, resp) => {
+                const record = resp.ops[0];
                 const token = jwt.sign({ id: record._id }, SECRET, {
                     expiresIn: 172800 // expires in 48 hours
                 });

@@ -71,4 +71,56 @@ module.exports = function(app, db) {
     app.post('/auth/logout', (req, res) => {
 
     });
+
+    app.post('/auth/check-invitation-token', (req, res) => {
+        const token = req.body.token;
+        
+        jwt.verify(token, SECRET, (err, decoded) => {
+            if (decoded) {
+                const accountId = decoded.id;
+                const query = {"_id": ObjectID(accountId)};
+
+                db.collection('doctors').findOne(query, (err, item) => {
+                    if (item.status === 'invited') {
+                        res.status(200).send({isValid: true});
+                    } else {
+                        res.status(406).send('The link is invalid');
+                    }
+                });
+            } else {
+                if (err) {
+                    res.status(500).send(err);
+                } else {
+                    res.status(500).send('Something went wrong');
+                }
+            }
+        });
+    });
+
+    app.put('/auth/accept-invitation', (req, res) => {
+        const token = req.body.token;
+        const password = req.body.password;
+
+        jwt.verify(token, SECRET, (err, decoded) => {
+            if (decoded) {
+                const accountId = decoded.id;
+                const query = {"_id": ObjectID(accountId)};
+                const newValues = {$set: {password: password, status: "Active"}};
+
+                db.collection('doctors').updateOne(query, newValues, (err, resp) => {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else {
+                        res.status(200).send({updated: true});
+                    }
+                });
+            } else {
+                if (err) {
+                     res.status(500).send(err);
+                 } else {
+                    res.status(500).send('Something went wrong');
+                 }
+            }
+        });
+    });
 }
