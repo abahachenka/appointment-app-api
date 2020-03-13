@@ -121,11 +121,17 @@ module.exports = function(app, db) {
 
             // todo: send email
 
-            doctorsCollection.insert(doctor, (err, result) => {
+            doctorsCollection.insert(doctor, (err, record) => {
+                const token = jwt.sign({ id: record._id }, SECRET, {
+                    expiresIn: 172800 // expires in 48 hours
+                });
+                const acceptInvitationLink = process.env.UI_SERVER_URL + ':' + process.env.UI_SERVER_PORT + '/accept-invitation/' + token;
+
                 if (err) {
                     res.status(500).send(err);
                 } else {
-                    res.status(200).send({});
+                    // return email link
+                    res.status(200).send(acceptInvitationLink);
                 }
             });
         });
