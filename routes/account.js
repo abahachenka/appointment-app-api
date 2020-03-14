@@ -6,7 +6,19 @@ const { ObjectID } = require('mongodb');
 
 module.exports = function(app, db) {
     const clinicsCollection = db.collection('clinics');
-    // todo: add doctors check
+
+    function checkAccountPassword(res, account, enteredPassword) {
+        const result = bcrypt.compareSync(enteredPassword, account.password);
+        if (result === true) {
+            const token = jwt.sign({ id: account._id }, SECRET, {
+                expiresIn: 86400 // expires in 24 hours
+            });
+            res.status(200).send({token: token});
+
+        } else {
+            res.status(401).send('Invalid username or password');
+        }
+    }
 
     app.post('/auth/login', (req, res) => {
         const accountDetails = {
@@ -23,19 +35,15 @@ module.exports = function(app, db) {
                 res.send(err);
             } else {
                 if (account && account.password) {
-                    const result = bcrypt.compareSync(req.body.password, account.password);
-                    
-                    if (result === true) {
-                        const token = jwt.sign({ id: account._id }, SECRET, {
-                            expiresIn: 86400 // expires in 24 hours
-                        });
-                        res.status(200).send({token: token});
-
-                    } else {
-                        res.status(401).send('Invalid username or password');
-                    }
+                    checkAccountPassword(res, account, req.body.password);
                 } else {
-                    res.status(401).send('Invalid username or password');
+                    db.collection('doctors').findOne(accountDetails, (err, account) => {
+                        if (account && account.password) {
+                            checkAccountPassword(res, account, req.body.password);
+                        } else {
+                            res.status(401).send('Invalid username or password');
+                        }
+                    });
                 }
             }
         });
@@ -74,7 +82,7 @@ module.exports = function(app, db) {
 
     app.post('/auth/check-invitation-token', (req, res) => {
         const token = req.body.token;
-        
+
         jwt.verify(token, SECRET, (err, decoded) => {
             if (decoded) {
                 const accountId = decoded.id;
@@ -100,12 +108,16 @@ module.exports = function(app, db) {
     app.put('/auth/accept-invitation', (req, res) => {
         const token = req.body.token;
         const password = req.body.password;
+        const salt = bcrypt.genSaltSync(10);
 
         jwt.verify(token, SECRET, (err, decoded) => {
             if (decoded) {
                 const accountId = decoded.id;
                 const query = {"_id": ObjectID(accountId)};
-                const newValues = {$set: {password: password, status: "Active"}};
+                const newValues = {$set: {
+                    password: bcrypt.hashSync(req.body.password, salt),
+                    status: "Active"
+                }};
 
                 db.collection('doctors').updateOne(query, newValues, (err, resp) => {
                     if (err) {
