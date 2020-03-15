@@ -76,10 +76,6 @@ module.exports = function(app, db) {
         });
     });
 
-    app.post('/auth/logout', (req, res) => {
-
-    });
-
     app.post('/auth/check-invitation-token', (req, res) => {
         const token = req.body.token;
 

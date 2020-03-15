@@ -31,6 +31,7 @@ const SECRET = process.env.SECRET_KEY;
     app.post('/address-cover', (req, res) => {
         checkRequestToken(req, res, (decoded) => {
             const record = {
+                place: req.body.place,
                 street: req.body.street,
                 buildings: req.body.buildings,
                 clinic_id: ObjectID(decoded.id)
