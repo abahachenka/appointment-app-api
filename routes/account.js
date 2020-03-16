@@ -6,14 +6,16 @@ const { ObjectID } = require('mongodb');
 
 module.exports = function(app, db) {
     const clinicsCollection = db.collection('clinics');
+    const doctorsCollection = db.collection('doctors');
 
     function checkAccountPassword(res, account, enteredPassword) {
         const result = bcrypt.compareSync(enteredPassword, account.password);
         if (result === true) {
-            const token = jwt.sign({ id: account._id }, SECRET, {
+            const accountType = account.hasOwnProperty('clinic_id') ? 'doctor' : 'clinic';
+            const token = jwt.sign({ id: account._id, accountType}, SECRET, {
                 expiresIn: 86400 // expires in 24 hours
             });
-            res.status(200).send({token: token});
+            res.status(200).send({token, accountType});
 
         } else {
             res.status(401).send('Invalid username or password');
@@ -49,22 +51,51 @@ module.exports = function(app, db) {
         });
     });
 
-
     app.post('/auth/account', (req, res) => {
         const token = req.headers['x-access-token'];
+
+        const loadDoctorAccount = (id) => {
+            const details = {"_id": ObjectID(id)};
+
+            doctorsCollection.findOne(details, (err, account) => {
+                if (err) {
+                    res.status(500).send(err);
+                } else {
+                    const categoryId = account.category_id;
+                    db.collection('doctor-categories').findOne({"_id": categoryId}, (err, category) => {
+                        if (err) {
+                            res.status(500).send(err);
+                        } else {
+                            res.status(200).send({...account, categoryName: category.categoryName});
+                        }
+                    });
+                }
+            });
+        };
+
+        const loadClinicAccount = (id) => {
+            const details = {"_id": ObjectID(id)};
+
+            clinicsCollection.findOne(details, (err, item) => {
+                if (err) {
+                    res.status(500).send(err);
+                } else {
+                    res.status(200).send(item);
+                }
+            });
+        };
 
         jwt.verify(token, SECRET, function(err, decoded) {
             if (decoded) {
                 const id = decoded.id;
-                const details = {"_id": ObjectID(id)};
+                const accountType = decoded.accountType;
 
-                clinicsCollection.findOne(details, (err, item) => {
-                    if (err) {
-                        res.status(500).send(err);
-                    } else {
-                        res.status(200).send(item);
-                    }
-                });
+                if (accountType === 'doctor') {
+                    loadDoctorAccount(id);
+                } else {
+                    loadClinicAccount(id);
+                }
+               
             } else {
                 if (err) {
                      res.status(500).send(err);
@@ -84,7 +115,7 @@ module.exports = function(app, db) {
                 const accountId = decoded.id;
                 const query = {"_id": ObjectID(accountId)};
 
-                db.collection('doctors').findOne(query, (err, item) => {
+                doctorsCollection.findOne(query, (err, item) => {
                     if (item.status === 'invited') {
                         res.status(200).send({isValid: true});
                     } else {
