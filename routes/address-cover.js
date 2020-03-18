@@ -30,10 +30,15 @@ const SECRET = process.env.SECRET_KEY;
 
     app.post('/address-cover', (req, res) => {
         checkRequestToken(req, res, (decoded) => {
+            let buildings = req.body.buildings.split(',');
+            buildings = buildings.map((building, index) => {
+                return building.trim().toLowerCase();
+            });
+
             const record = {
                 place: req.body.place,
                 street: req.body.street,
-                buildings: req.body.buildings,
+                buildings,
                 clinic_id: ObjectID(decoded.id)
             };
 
