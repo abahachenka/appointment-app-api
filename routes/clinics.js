@@ -2,17 +2,64 @@ const { ObjectID } = require('mongodb');
 const bcrypt = require('bcrypt');
 
 module.exports = function(app, db) {
-    const collection = db.collection('clinics');
+    const clinicsCollection = db.collection('clinics');
+    const addressCoverCollection = db.collection('address-cover');
 
     // Get all clinics
     app.get('/clinics', (req, res) => {
-        collection.find({}).toArray((err, items) => {
-            if (err) {
-                res.status(500).send(err);
-            } else {
-                res.status(200).send(items);
-            }
-        });
+            console.log(req.query);
+        if (req.query) {
+            // get by address
+            const query = {
+                place: req.query.place,
+                street: req.query.street,
+                buildings:  req.query.building
+            };
+
+            const projection = {
+                "clinic_id": 1,
+                "_id": 0
+            };
+
+            addressCoverCollection
+                .find(query)
+                .project(projection)
+                .toArray((err, items) => {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else {
+                        let clinicIds = [];
+
+                        items.map((item, index) => {
+                            clinicIds.push(ObjectID(item.clinic_id));
+                        });
+
+                        const clinicsQuery = {
+                            "_id": { $in: clinicIds }
+                        };
+
+                        clinicsCollection
+                            .find(clinicsQuery)
+                            .toArray((err, clinics) => {
+                                if (err) {
+                                    res.status(500).send(err);
+                                } else {
+                                    res.status(200).send(clinics);
+                                }
+                        });
+                    }
+            });
+        } else {
+
+            // get all
+            clinicsCollection.find({}).toArray((err, items) => {
+                if (err) {
+                    res.status(500).send(err);
+                } else {
+                    res.status(200).send(items);
+                }
+            });
+        } 
     });
 
     // Create a new clinic
@@ -39,14 +86,18 @@ module.exports = function(app, db) {
             return;
         }
 
+        const alias = req.body.name.trim().toLowerCase().replace(/\s/gi, '-').replace(/[#№]/gi, '');
+
         const clinic = {
             name: req.body.name,
+            alias,
             phoneNumber: req.body.phoneNumber,
+            address: req.body.address,
             email: req.body.email,
             password: bcrypt.hashSync(req.body.password, salt)
         };
 
-        collection.insert(clinic, (err, result) => {
+        clinicsCollection.insert(clinic, (err, result) => {
             if (err) {
                 res.status(500).send(err);
             } else {
@@ -60,7 +111,7 @@ module.exports = function(app, db) {
         const id = req.params.id;
         const details = {"_id": ObjectID(id)};
 
-        collection.findOne(details, (err, item) => {
+        clinicsCollection.findOne(details, (err, item) => {
             if (err) {
                 res.send(err);
             } else {
@@ -80,7 +131,7 @@ module.exports = function(app, db) {
             password: req.body.password
         };
 
-        collection.updateOne(details, { $set: {...clinic} }, (err, item) => {
+        clinicsCollection.updateOne(details, { $set: {...clinic} }, (err, item) => {
             if (err) {
                 res.send(err);
             } else {
@@ -94,7 +145,7 @@ module.exports = function(app, db) {
         const id = req.params.id;
         const details = {"_id": ObjectID(id)};
 
-        collection.remove(details, (err, item) => {
+        clinicsCollection.remove(details, (err, item) => {
             if (err) {
                 res.send(err);
             } else {
