@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const SECRET = process.env.SECRET_KEY;
 
- module.exports = function(app, db) {
+module.exports = function(app, db) {
     const collection = db.collection('appointments');
 
     /**
@@ -72,7 +72,8 @@ const SECRET = process.env.SECRET_KEY;
                         doctor_id: {
                             $in: doctorIds,
                         },
-                        patient: null,
+                        patient_firstname: null,
+                        patient_lastname: null,
                         datetime: {
                             $gte: new Date()
                         }
@@ -103,5 +104,25 @@ const SECRET = process.env.SECRET_KEY;
                 });
             });
         }
+    });
+
+    app.put('/appointments/:id', (req, res) => {
+        const id = req.params.id;
+        const details = {_id: ObjectID(id)};
+        const orderNumber = Math.floor(Date.now() / 60000);
+        const patient = {
+            patient_firstname: req.body.firstName,
+            patient_lastname: req.body.lastName,
+            patient_contact_number: req.body.contactNumber,
+            order_number: orderNumber
+        };
+
+        collection.updateOne(details, {$set: {...patient}}, (err, result) => {
+            if (err) {
+                res.status(500).send(err);
+            } else {
+                res.status(200).send({orderNumber});
+            }
+        });
     });
 };
