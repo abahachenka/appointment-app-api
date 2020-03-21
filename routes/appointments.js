@@ -72,8 +72,7 @@ module.exports = function(app, db) {
                         doctor_id: {
                             $in: doctorIds,
                         },
-                        patient_firstname: null,
-                        patient_lastname: null,
+                        order_number: null,
                         datetime: {
                             $gte: new Date()
                         }
