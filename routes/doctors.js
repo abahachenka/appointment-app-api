@@ -14,6 +14,7 @@ module.exports = function(app, db) {
       */
     const checkRequestToken = (req, res, cb) => {
         const token = req.headers['x-access-token'];
+        console.log(token);
 
         jwt.verify(token, SECRET, (err, decoded) => {
             if (decoded) {
@@ -53,17 +54,27 @@ module.exports = function(app, db) {
     });
 
     app.get('/doctor-categories', (req, res) => {
-        checkRequestToken(req, res, (decoded) => {
-            const id = decoded.id;
+        const getDoctorCategories = (clinicId) => {
+            categoriesCollection
+                .find({
+                    clinic_id: ObjectID(clinicId)
+                })
+                .toArray((err, items) => {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else {
+                        res.status(200).send(items);
+                    }
+                });
+        }
 
-            categoriesCollection.find({clinic_id: ObjectID(id)}).toArray((err, items) => {
-                if (err) {
-                    res.status(500).send(err);
-                } else {
-                    res.status(200).send(items);
-                }
+        if (req.query.clinicId) {
+            getDoctorCategories(req.query.clinicId);
+        } else {
+            checkRequestToken(req, res, (decoded) => {
+                getDoctorCategories(decoded.id);
             });
-        });
+        }
     });
 
     app.get('/doctor-categories/:categoryAlias', (req, res) => {

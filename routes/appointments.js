@@ -31,10 +31,8 @@ const SECRET = process.env.SECRET_KEY;
     app.post('/appointments', (req, res) => {
         checkRequestToken(req, res, (decoded) => {
             const doctorId = decoded.id;
-            console.log(req.body);
             const appointment = {
-                date: req.body.date,
-                time: req.body.time,
+                datetime: new Date(req.body.date + ' ' + req.body.time),
                 doctor_id: ObjectID(doctorId)
             };
 
@@ -49,18 +47,61 @@ const SECRET = process.env.SECRET_KEY;
     });
 
     app.get('/appointments', (req, res) => {
-        checkRequestToken(req, res, (decoded) => {
-            const query = {
-                doctor_id: ObjectID(decoded.id)
-            };
+        let query;
 
-            collection.find(query).toArray((err, items) => {
-                if (err) {
-                    res.status(500).send(err);
-                } else {
-                    res.status(200).send(items);
-                }
+        if (req.query.categoryId) {
+            query = {
+                category_id: ObjectID(req.query.categoryId),
+                status: 'Active'
+            };
+            db.collection('doctors')
+                .find(query)
+                .project({
+                    '_id': 1,
+                    'title': 1,
+                    'firstName': 1,
+                    'lastName': 1,
+                    'room': 1
+                })
+                .toArray((err, doctors) => {
+                    const doctorIds = doctors.map((doctor) => {
+                        return doctor._id;
+                    });
+
+                    collection.find({
+                        doctor_id: {
+                            $in: doctorIds,
+                        },
+                        patient: null,
+                        datetime: {
+                            $gte: new Date()
+                        }
+                    }).toArray((err, appointments) => {
+                        const newAppointments = [];
+
+                        appointments.forEach((appointment, index) => {
+                            doctors.forEach((doctor, index) => {
+                                if (appointment.doctor_id.equals(doctor._id)) {
+                                    newAppointments.push({...appointment, doctor})
+                                }
+                            });
+                        });
+                        res.send(newAppointments);
+                    });
+                });
+        } else {
+            checkRequestToken(req, res, (decoded) => {
+                query = {
+                    doctor_id: ObjectID(decoded.id)
+                };
+                collection.find(query).toArray((err, items) => {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else {
+                        res.status(200).send(items);
+                    }
+                });
             });
-        });
+        }
     });
 };
