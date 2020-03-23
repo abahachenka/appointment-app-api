@@ -108,7 +108,7 @@ module.exports = function(app, db) {
     app.put('/appointments/:id', (req, res) => {
         const id = req.params.id;
         const details = {_id: ObjectID(id)};
-        const orderNumber = Math.floor(Date.now() / 60000);
+        const orderNumber = String(Math.floor(Date.now() / 60000));
         const patient = {
             patient_firstname: req.body.firstName,
             patient_lastname: req.body.lastName,
@@ -121,6 +121,24 @@ module.exports = function(app, db) {
                 res.status(500).send(err);
             } else {
                 res.status(200).send({orderNumber});
+            }
+        });
+    });
+
+    app.post('/appointments/cancel', (req, res) => {
+        const orderNumber = req.body.orderNumber;
+        const details = {order_number: orderNumber};
+
+        collection.updateOne(details, {$set: {
+            patient_firstname: null,
+            patient_lastname: null,
+            patient_contact_number: null,
+            order_number: null
+        }}, (err, result) => {
+            if (err) {
+                res.status(500).send(err);
+            } else {
+                res.status(200).send({cancelled: true});
             }
         });
     });
