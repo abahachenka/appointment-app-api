@@ -129,17 +129,20 @@ module.exports = function(app, db) {
         const orderNumber = req.body.orderNumber;
         const details = {order_number: orderNumber};
 
-        collection.updateOne(details, {$set: {
+        collection.update(details, {$set: {
             patient_firstname: null,
             patient_lastname: null,
             patient_contact_number: null,
             order_number: null
-        }}, (err, result) => {
-            if (err) {
-                res.status(500).send(err);
+        }}).then(resp => {
+            if (resp.result.nModified === 0) {
+                res.status(500).send('Wrong order number');
             } else {
                 res.status(200).send({cancelled: true});
             }
+        })
+        .catch(err => {
+            res.status(500).send(err);
         });
     });
 };
