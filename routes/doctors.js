@@ -137,7 +137,7 @@ module.exports = function(app, db) {
                 const token = jwt.sign({ id: record._id }, SECRET, {
                     expiresIn: 172800 // expires in 48 hours
                 });
-                const acceptInvitationLink = process.env.UI_SERVER_URL + ':' + process.env.UI_SERVER_PORT + '/accept-invitation/' + token;
+                const acceptInvitationLink = process.env.UI_SERVER_URL + '/accept-invitation/' + token;
 
                 if (err) {
                     res.status(500).send(err);

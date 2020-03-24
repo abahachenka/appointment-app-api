@@ -7,7 +7,7 @@ const cors = require('cors');
 
 // retrieving environmental variables
 require('dotenv').config();
-const port = process.env.API_SERVER_PORT || 3000;
+const port = process.env.PORT || 3000;
 const dbURL = process.env.DB_URL || '';
 
 // initializing db client
