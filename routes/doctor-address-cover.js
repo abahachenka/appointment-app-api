@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const SECRET = process.env.SECRET_KEY;
 
  module.exports = function(app, db) {
-    const collection = db.collection('address-cover');
+    const collection = db.collection('doctor-address-cover');
 
     /**
       * The functions performs common api-request actions:
@@ -28,7 +28,7 @@ const SECRET = process.env.SECRET_KEY;
         });
     }
 
-    app.post('/address-cover', (req, res) => {
+    app.post('/doctor-address-cover', (req, res) => {
         checkRequestToken(req, res, (decoded) => {
             let buildings = req.body.buildings.split(',');
             buildings = buildings.map((building, index) => {
@@ -39,7 +39,7 @@ const SECRET = process.env.SECRET_KEY;
                 place: req.body.place,
                 street: req.body.street,
                 buildings,
-                clinic_id: ObjectID(decoded.id)
+                doctor_id: ObjectID(decoded.id)
             };
 
             collection.insertOne(record, (err, result) => {
@@ -52,10 +52,10 @@ const SECRET = process.env.SECRET_KEY;
         });
     });
 
-    app.get('/address-cover', (req, res) => {
+    app.get('/doctor-address-cover', (req, res) => {
         checkRequestToken(req, res, (decoded) => {
             const query = {
-                clinic_id: ObjectID(decoded.id)
+                doctor_id: ObjectID(decoded.id)
             };
 
             collection.find(query).toArray((err, result) => {

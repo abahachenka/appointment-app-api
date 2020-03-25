@@ -7,7 +7,6 @@ module.exports = function(app, db) {
 
     // Get all clinics
     app.get('/clinics', (req, res) => {
-            console.log(req.query);
         if (req.query) {
             // get by address
             const query = {

@@ -14,7 +14,6 @@ module.exports = function(app, db) {
       */
     const checkRequestToken = (req, res, cb) => {
         const token = req.headers['x-access-token'];
-        console.log(token);
 
         jwt.verify(token, SECRET, (err, decoded) => {
             if (decoded) {
