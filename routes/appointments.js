@@ -47,13 +47,63 @@ module.exports = function(app, db) {
     });
 
     app.get('/appointments', (req, res) => {
-        let query;
+        const getDistrictDoctorAppointments = (query) => {
 
-        if (req.query.categoryId) {
-            query = {
-                category_id: ObjectID(req.query.categoryId),
-                status: 'Active'
-            };
+            db.collection('doctor-address-cover')
+                .findOne(query, (err, result) => {
+                    if (err) {
+                        res.status(500).send(err);
+                        return;
+                    }
+
+                    // get doctor data
+                    db.collection('doctors')
+                        .findOne({
+                                _id: ObjectID(result.doctor_id)
+                            },
+                            {
+                                projection: {
+                                    '_id': 1,
+                                    'title': 1,
+                                    'firstName': 1,
+                                    'lastName': 1,
+                                    'room': 1
+                                }
+                            },
+                            (err, doctor) => {
+                                if (err) {
+                                    res.status(500).send(err);
+                                    return;
+                                }
+
+                                // get doctor available appointments
+                                db.collection('appointments')
+                                    .find({
+                                        doctor_id: ObjectID(doctor._id),
+                                        order_number: null,
+                                        datetime: {
+                                            $gte: new Date()
+                                        }
+                                    })
+                                    .toArray((err, appointments) => {
+                                        if (err) {
+                                            res.status(500).send(err);
+                                            return;
+                                        }
+
+                                        const newAppointments = [];
+
+                                        appointments.forEach((appointment, index) => {
+                                            newAppointments.push({...appointment, doctor})
+                                        });
+
+                                        res.status(200).send(newAppointments);
+                                    });
+                            });
+                });
+        };
+
+        const getCategoryAllDoctorAppointments = (query) => {
             db.collection('doctors')
                 .find(query)
                 .project({
@@ -68,39 +118,72 @@ module.exports = function(app, db) {
                         return doctor._id;
                     });
 
-                    collection.find({
-                        doctor_id: {
-                            $in: doctorIds,
-                        },
-                        order_number: null,
-                        datetime: {
-                            $gte: new Date()
-                        }
-                    }).toArray((err, appointments) => {
-                        const newAppointments = [];
+                    db.collection('appointments')
+                        .find({
+                            doctor_id: {
+                                $in: doctorIds,
+                            },
+                            order_number: null,
+                            datetime: {
+                                $gte: new Date()
+                            }
+                        })
+                        .toArray((err, appointments) => {
+                            if (err) {
+                                res.status(500).send(err);
+                            } else {
+                                const newAppointments = [];
 
-                        appointments.forEach((appointment, index) => {
-                            doctors.forEach((doctor, index) => {
-                                if (appointment.doctor_id.equals(doctor._id)) {
-                                    newAppointments.push({...appointment, doctor})
-                                }
-                            });
+                                appointments.forEach((appointment, index) => {
+                                    doctors.forEach((doctor, index) => {
+                                        if (appointment.doctor_id.equals(doctor._id)) {
+                                            newAppointments.push({...appointment, doctor})
+                                        }
+                                    });
+                                });
+                                res.status(200).send(newAppointments);
+                            }
                         });
-                        res.send(newAppointments);
-                    });
                 });
+        }
+
+        let query;
+
+        if (req.query.filter) {
+            let address = req.query.filter.split(',');
+
+            query = {
+                place: address[0].trim(),
+                street: address[1].trim(),
+                buildings: address[2].trim()
+            };
+
+            getDistrictDoctorAppointments(query);
+            return;
+        }
+
+        if (req.query.categoryId) {
+            query = {
+                category_id: ObjectID(req.query.categoryId),
+                status: 'Active'
+            };
+
+            getCategoryAllDoctorAppointments(query);
         } else {
             checkRequestToken(req, res, (decoded) => {
                 query = {
                     doctor_id: ObjectID(decoded.id)
                 };
-                collection.find(query).toArray((err, items) => {
-                    if (err) {
-                        res.status(500).send(err);
-                    } else {
-                        res.status(200).send(items);
-                    }
-                });
+
+                db.collection('appointments')
+                    .find(query)
+                    .toArray((err, items) => {
+                        if (err) {
+                            res.status(500).send(err);
+                        } else {
+                            res.status(200).send(items);
+                        }
+                    });
             });
         }
     });
