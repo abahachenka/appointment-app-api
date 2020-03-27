@@ -29,7 +29,7 @@ module.exports = function(app, db) {
                     } else {
                         let clinicIds = [];
 
-                        items.map((item, index) => {
+                        items.map((item) => {
                             clinicIds.push(ObjectID(item.clinic_id));
                         });
 
@@ -130,7 +130,7 @@ module.exports = function(app, db) {
             password: req.body.password
         };
 
-        clinicsCollection.updateOne(details, { $set: {...clinic} }, (err, item) => {
+        clinicsCollection.updateOne(details, { $set: {...clinic} }, (err) => {
             if (err) {
                 res.send(err);
             } else {

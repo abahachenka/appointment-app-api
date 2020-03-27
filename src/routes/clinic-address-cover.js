@@ -1,16 +1,13 @@
 const { ObjectID } = require('mongodb');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const SECRET = process.env.SECRET_KEY;
 const {checkRequestToken} = require('../helpers/account');
 
- module.exports = function(app, db) {
-    const collection = db.collection('doctor-address-cover');
+module.exports = function(app, db) {
+    const collection = db.collection('clinic-address-cover');
 
-    app.post('/doctor-address-cover', (req, res) => {
+    app.post('/clinic-address-cover', (req, res) => {
         checkRequestToken(req, res, (decoded) => {
             let buildings = req.body.buildings.split(',');
-            buildings = buildings.map((building, index) => {
+            buildings = buildings.map((building) => {
                 return building.trim().toLowerCase();
             });
 
@@ -18,10 +15,10 @@ const {checkRequestToken} = require('../helpers/account');
                 place: req.body.place,
                 street: req.body.street,
                 buildings,
-                doctor_id: ObjectID(decoded.id)
+                clinic_id: ObjectID(decoded.id)
             };
 
-            collection.insertOne(record, (err, result) => {
+            collection.insertOne(record, (err) => {
                 if (err) {
                     res.status(500).send(err);
                 } else {
@@ -31,10 +28,10 @@ const {checkRequestToken} = require('../helpers/account');
         });
     });
 
-    app.get('/doctor-address-cover', (req, res) => {
+    app.get('/clinic-address-cover', (req, res) => {
         checkRequestToken(req, res, (decoded) => {
             const query = {
-                doctor_id: ObjectID(decoded.id)
+                clinic_id: ObjectID(decoded.id)
             };
 
             collection.find(query).toArray((err, result) => {

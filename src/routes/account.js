@@ -8,7 +8,7 @@ module.exports = function(app, db) {
         const result = bcrypt.compareSync(enteredPassword, account.password);
         
         if (result === true) {
-            const accountType = account.hasOwnProperty('clinic_id') ? 'doctor' : 'clinic';
+            const accountType = account.clinic_id ? 'doctor' : 'clinic';
             const token = jwt.sign({ id: account._id, accountType}, SECRET, {
                 expiresIn: 86400 // expires in 24 hours
             });
@@ -143,12 +143,12 @@ module.exports = function(app, db) {
                 const accountId = decoded.id;
                 const query = {"_id": ObjectID(accountId)};
                 const newValues = {$set: {
-                    password: bcrypt.hashSync(req.body.password, salt),
+                    password: bcrypt.hashSync(password, salt),
                     status: "Active"
                 }};
 
                 db.collection('doctors')
-                    .updateOne(query, newValues, (err, resp) => {
+                    .updateOne(query, newValues, (err) => {
                         if (err) {
                             res.status(500).send(err);
                         } else {

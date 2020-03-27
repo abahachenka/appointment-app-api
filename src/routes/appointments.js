@@ -1,8 +1,5 @@
 const { ObjectID } = require('mongodb');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const {checkRequestToken} = require('../helpers/account');
-const SECRET = process.env.SECRET_KEY;
 
 module.exports = function(app, db) {
     app.post('/appointments', (req, res) => {
@@ -14,7 +11,7 @@ module.exports = function(app, db) {
             };
 
             db.collection('appointments')
-                .insert(appointment, (err, resp) => {
+                .insert(appointment, (err) => {
                     if (err) {
                         res.status(500).send(err);
                     } else {
@@ -71,7 +68,7 @@ module.exports = function(app, db) {
 
                                         const newAppointments = [];
 
-                                        appointments.forEach((appointment, index) => {
+                                        appointments.forEach((appointment) => {
                                             newAppointments.push({...appointment, doctor})
                                         });
 
@@ -112,8 +109,8 @@ module.exports = function(app, db) {
                             } else {
                                 const newAppointments = [];
 
-                                appointments.forEach((appointment, index) => {
-                                    doctors.forEach((doctor, index) => {
+                                appointments.forEach((appointment) => {
+                                    doctors.forEach((doctor) => {
                                         if (appointment.doctor_id.equals(doctor._id)) {
                                             newAppointments.push({...appointment, doctor})
                                         }
@@ -178,7 +175,7 @@ module.exports = function(app, db) {
         };
 
         db.collection('appointments')
-            .updateOne(details, {$set: {...patient}}, (err, result) => {
+            .updateOne(details, {$set: {...patient}}, (err) => {
                 if (err) {
                     res.status(500).send(err);
                 } else {

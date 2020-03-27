@@ -24,7 +24,7 @@ try {
         const database = client.db('appointment-app');
 
         // importing routes
-        require('./routes')(app, database);
+        require('./src/routes')(app, database);
 
         app.listen(port, () => {
             console.log('We are live on ' + port);
