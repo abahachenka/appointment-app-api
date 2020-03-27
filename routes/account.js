@@ -3,13 +3,10 @@ const jwt = require('jsonwebtoken');
 const SECRET = process.env.SECRET_KEY;
 const { ObjectID } = require('mongodb');
 
-
 module.exports = function(app, db) {
-    const clinicsCollection = db.collection('clinics');
-    const doctorsCollection = db.collection('doctors');
-
-    function checkAccountPassword(res, account, enteredPassword) {
+    const checkAccountPassword = (res, account, enteredPassword) => {
         const result = bcrypt.compareSync(enteredPassword, account.password);
+        
         if (result === true) {
             const accountType = account.hasOwnProperty('clinic_id') ? 'doctor' : 'clinic';
             const token = jwt.sign({ id: account._id, accountType}, SECRET, {
@@ -32,22 +29,23 @@ module.exports = function(app, db) {
             return;
         }
 
-        clinicsCollection.findOne(accountDetails, (err, account) => {
-            if (err) {
-                res.send(err);
-            } else {
-                if (account && account.password) {
-                    checkAccountPassword(res, account, req.body.password);
+        db.collection('clinics')
+            .findOne(accountDetails, (err, account) => {
+                if (err) {
+                    res.send(err);
                 } else {
-                    db.collection('doctors').findOne(accountDetails, (err, account) => {
-                        if (account && account.password) {
-                            checkAccountPassword(res, account, req.body.password);
-                        } else {
-                            res.status(401).send('Invalid username or password');
-                        }
-                    });
+                    if (account && account.password) {
+                        checkAccountPassword(res, account, req.body.password);
+                    } else {
+                        db.collection('doctors').findOne(accountDetails, (err, account) => {
+                            if (account && account.password) {
+                                checkAccountPassword(res, account, req.body.password);
+                            } else {
+                                res.status(401).send('Invalid username or password');
+                            }
+                        });
+                    }
                 }
-            }
         });
     });
 
@@ -57,32 +55,34 @@ module.exports = function(app, db) {
         const loadDoctorAccount = (id) => {
             const details = {"_id": ObjectID(id)};
 
-            doctorsCollection.findOne(details, (err, account) => {
-                if (err) {
-                    res.status(500).send(err);
-                } else {
-                    const categoryId = account.category_id;
-                    db.collection('doctor-categories').findOne({"_id": categoryId}, (err, category) => {
-                        if (err) {
-                            res.status(500).send(err);
-                        } else {
-                            res.status(200).send({...account, categoryName: category.categoryName});
-                        }
-                    });
-                }
+            db.collection('doctors')
+                .findOne(details, (err, account) => {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else {
+                        const categoryId = account.category_id;
+                        db.collection('doctor-categories').findOne({"_id": categoryId}, (err, category) => {
+                            if (err) {
+                                res.status(500).send(err);
+                            } else {
+                                res.status(200).send({...account, categoryName: category.categoryName});
+                            }
+                        });
+                    }
             });
         };
 
         const loadClinicAccount = (id) => {
             const details = {"_id": ObjectID(id)};
 
-            clinicsCollection.findOne(details, (err, item) => {
-                if (err) {
-                    res.status(500).send(err);
-                } else {
-                    res.status(200).send(item);
-                }
-            });
+            db.collection('clinics')
+                .findOne(details, (err, item) => {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else {
+                        res.status(200).send(item);
+                    }
+                });
         };
 
         jwt.verify(token, SECRET, function(err, decoded) {
@@ -98,10 +98,10 @@ module.exports = function(app, db) {
                
             } else {
                 if (err) {
-                     res.status(500).send(err);
-                 } else {
+                    res.status(500).send(err);
+                } else {
                     res.status(500).send('Something went wrong');
-                 }
+                }
             }
             
         });
@@ -115,13 +115,14 @@ module.exports = function(app, db) {
                 const accountId = decoded.id;
                 const query = {"_id": ObjectID(accountId)};
 
-                doctorsCollection.findOne(query, (err, item) => {
-                    if (item.status === 'invited') {
-                        res.status(200).send({isValid: true});
-                    } else {
-                        res.status(406).send('The link is invalid');
-                    }
-                });
+                db.collection('doctors')
+                    .findOne(query, (err, item) => {
+                        if (item.status === 'invited') {
+                            res.status(200).send({isValid: true});
+                        } else {
+                            res.status(406).send('The link is invalid');
+                        }
+                    });
             } else {
                 if (err) {
                     res.status(500).send(err);
@@ -146,19 +147,20 @@ module.exports = function(app, db) {
                     status: "Active"
                 }};
 
-                db.collection('doctors').updateOne(query, newValues, (err, resp) => {
-                    if (err) {
-                        res.status(500).send(err);
-                    } else {
-                        res.status(200).send({updated: true});
-                    }
-                });
+                db.collection('doctors')
+                    .updateOne(query, newValues, (err, resp) => {
+                        if (err) {
+                            res.status(500).send(err);
+                        } else {
+                            res.status(200).send({updated: true});
+                        }
+                    });
             } else {
                 if (err) {
-                     res.status(500).send(err);
-                 } else {
+                    res.status(500).send(err);
+                } else {
                     res.status(500).send('Something went wrong');
-                 }
+                }
             }
         });
     });

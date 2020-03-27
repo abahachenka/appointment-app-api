@@ -138,18 +138,4 @@ module.exports = function(app, db) {
             }
         });
     });
-
-    // Deleting a clinic
-    app.delete('/clinics/:id', (req, res) => {
-        const id = req.params.id;
-        const details = {"_id": ObjectID(id)};
-
-        clinicsCollection.remove(details, (err, item) => {
-            if (err) {
-                res.send(err);
-            } else {
-                res.send('Note ' + id + ' deleted!');
-            }
-        });
-    });
 };

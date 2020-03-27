@@ -1,32 +1,11 @@
 const { ObjectID } = require('mongodb');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const {checkRequestToken} = require('../helpers/account');
 const SECRET = process.env.SECRET_KEY;
 
- module.exports = function(app, db) {
+module.exports = function(app, db) {
     const collection = db.collection('clinic-address-cover');
-
-    /**
-      * The functions performs common api-request actions:
-      * - check token
-      * - pass callback on success
-      * - send error on failure
-      */
-    const checkRequestToken = (req, res, cb) => {
-        const token = req.headers['x-access-token'];
-
-        jwt.verify(token, SECRET, (err, decoded) => {
-            if (decoded) {
-                cb(decoded);
-            } else {
-                if (err) {
-                    res.status(500).send(err);
-                } else {
-                    res.status(500).send('Something went wrong');
-                }
-            }
-        });
-    }
 
     app.post('/clinic-address-cover', (req, res) => {
         checkRequestToken(req, res, (decoded) => {

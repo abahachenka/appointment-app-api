@@ -1,33 +1,10 @@
 const { ObjectID } = require('mongodb');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const {checkRequestToken} = require('../helpers/account');
 const SECRET = process.env.SECRET_KEY;
 
 module.exports = function(app, db) {
-    const collection = db.collection('appointments');
-
-    /**
-      * The functions performs common api-request actions:
-      * - check token
-      * - pass callback on success
-      * - send error on failure
-      */
-    const checkRequestToken = (req, res, cb) => {
-        const token = req.headers['x-access-token'];
-
-        jwt.verify(token, SECRET, (err, decoded) => {
-            if (decoded) {
-                cb(decoded);
-            } else {
-                if (err) {
-                    res.status(500).send(err);
-                } else {
-                    res.status(500).send('Something went wrong');
-                }
-            }
-        });
-    }
-
     app.post('/appointments', (req, res) => {
         checkRequestToken(req, res, (decoded) => {
             const doctorId = decoded.id;
@@ -36,13 +13,14 @@ module.exports = function(app, db) {
                 doctor_id: ObjectID(doctorId)
             };
 
-            collection.insert(appointment, (err, resp) => {
-                if (err) {
-                    res.status(500).send(err);
-                } else {
-                    res.status(200).send({added: true});
-                }
-            });
+            db.collection('appointments')
+                .insert(appointment, (err, resp) => {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else {
+                        res.status(200).send({added: true});
+                    }
+                });
         });
     });
 
@@ -199,33 +177,36 @@ module.exports = function(app, db) {
             order_number: orderNumber
         };
 
-        collection.updateOne(details, {$set: {...patient}}, (err, result) => {
-            if (err) {
-                res.status(500).send(err);
-            } else {
-                res.status(200).send({orderNumber});
-            }
-        });
+        db.collection('appointments')
+            .updateOne(details, {$set: {...patient}}, (err, result) => {
+                if (err) {
+                    res.status(500).send(err);
+                } else {
+                    res.status(200).send({orderNumber});
+                }
+            });
     });
 
     app.post('/appointments/cancel', (req, res) => {
         const orderNumber = req.body.orderNumber;
         const details = {order_number: orderNumber};
 
-        collection.update(details, {$set: {
-            patient_firstname: null,
-            patient_lastname: null,
-            patient_contact_number: null,
-            order_number: null
-        }}).then(resp => {
-            if (resp.result.nModified === 0) {
-                res.status(500).send('Wrong order number');
-            } else {
-                res.status(200).send({cancelled: true});
-            }
-        })
-        .catch(err => {
-            res.status(500).send(err);
-        });
+        db.collection('appointments')
+            .update(details, {$set: {
+                patient_firstname: null,
+                patient_lastname: null,
+                patient_contact_number: null,
+                order_number: null
+            }})
+            .then(resp => {
+                if (resp.result.nModified === 0) {
+                    res.status(500).send('Wrong order number');
+                } else {
+                    res.status(200).send({cancelled: true});
+                }
+            })
+            .catch(err => {
+                res.status(500).send(err);
+            });
     });
 };
