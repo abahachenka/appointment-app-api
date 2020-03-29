@@ -23,7 +23,6 @@ module.exports = function(app, db) {
 
     app.get('/appointments', (req, res) => {
         const getDistrictDoctorAppointments = (query) => {
-
             db.collection('doctor-address-cover')
                 .findOne(query, (err, result) => {
                     if (err) {
@@ -31,50 +30,54 @@ module.exports = function(app, db) {
                         return;
                     }
 
-                    // get doctor data
-                    db.collection('doctors')
-                        .findOne({
-                                _id: ObjectID(result.doctor_id)
-                            },
-                            {
-                                projection: {
-                                    '_id': 1,
-                                    'title': 1,
-                                    'firstName': 1,
-                                    'lastName': 1,
-                                    'room': 1
-                                }
-                            },
-                            (err, doctor) => {
-                                if (err) {
-                                    res.status(500).send(err);
-                                    return;
-                                }
+                    if (result) {
+                        // get doctor data
+                        db.collection('doctors')
+                            .findOne({
+                                    _id: ObjectID(result.doctor_id)
+                                },
+                                {
+                                    projection: {
+                                        '_id': 1,
+                                        'title': 1,
+                                        'firstName': 1,
+                                        'lastName': 1,
+                                        'room': 1
+                                    }
+                                },
+                                (err, doctor) => {
+                                    if (err) {
+                                        res.status(500).send(err);
+                                        return;
+                                    }
 
-                                // get doctor available appointments
-                                db.collection('appointments')
-                                    .find({
-                                        doctor_id: ObjectID(doctor._id),
-                                        order_number: null,
-                                        datetime: {
-                                            $gte: new Date()
-                                        }
-                                    })
-                                    .toArray((err, appointments) => {
-                                        if (err) {
-                                            res.status(500).send(err);
-                                            return;
-                                        }
+                                    // get doctor available appointments
+                                    db.collection('appointments')
+                                        .find({
+                                            doctor_id: ObjectID(doctor._id),
+                                            order_number: null,
+                                            datetime: {
+                                                $gte: new Date()
+                                            }
+                                        })
+                                        .toArray((err, appointments) => {
+                                            if (err) {
+                                                res.status(500).send(err);
+                                                return;
+                                            }
 
-                                        const newAppointments = [];
+                                            const newAppointments = [];
 
-                                        appointments.forEach((appointment) => {
-                                            newAppointments.push({...appointment, doctor})
+                                            appointments.forEach((appointment) => {
+                                                newAppointments.push({...appointment, doctor})
+                                            });
+
+                                            res.status(200).send(newAppointments);
                                         });
-
-                                        res.status(200).send(newAppointments);
-                                    });
-                            });
+                                });
+                    } else {
+                        res.status(500).send('No doctors provide service for this area');
+                    }
                 });
         };
 
