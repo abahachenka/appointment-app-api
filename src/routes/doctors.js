@@ -85,6 +85,7 @@ module.exports = function(app, db) {
 
             db.collection('doctors')
                 .find(query)
+                .sort({status: 1})
                 .toArray((err, items) => {
                     if (err) {
                         res.status(500).send(err);

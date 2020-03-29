@@ -152,6 +152,7 @@ module.exports = function(app, db) {
 
                 db.collection('appointments')
                     .find(query)
+                    .sort({datetime: 1})
                     .toArray((err, items) => {
                         if (err) {
                             res.status(500).send(err);
