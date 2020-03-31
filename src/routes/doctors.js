@@ -9,7 +9,7 @@ module.exports = function(app, db) {
         checkRequestToken(req, res, (decoded) => {
             if (req.body.categoryName) {
                 const id = decoded.id;
-                const alias = req.body.categoryName.toLowerCase().replace(/\s/gi, '-');
+                const alias = req.body.categoryName.trim().toLowerCase().replace(/\s/gi, '-');
                 const category = {
                     categoryName: req.body.categoryName,
                     categoryAlias: alias,
@@ -17,13 +17,28 @@ module.exports = function(app, db) {
                 };
 
                 db.collection('doctor-categories')
-                    .insert(category, (err, result) => {
+                    .find({
+                        categoryAlias: alias,
+                        clinic_id: ObjectID(id)
+                    })
+                    .toArray((err, items) => {
                         if (err) {
                             res.status(500).send(err);
+                        } else if (items && items.length){
+                            res.status(406).send('This category already exists');
                         } else {
-                            res.status(200).send(result.ops[0]);
+                            db.collection('doctor-categories')
+                                .insert(category, (err, result) => {
+                                    if (err) {
+                                        res.status(500).send(err);
+                                    } else {
+                                        res.status(200).send(result.ops[0]);
+                                    }
+                                });
                         }
                     });
+
+                
             } else {
                 res.status(406).send('Category name is not provided');
             }
@@ -31,7 +46,8 @@ module.exports = function(app, db) {
     });
 
     app.get('/doctor-categories', (req, res) => {
-        const getDoctorCategories = (clinicId) => {
+        // The request is called from the user side
+        const getAppointmentDoctorCategories = (clinicId) => {
             db.collection('doctor-categories')
                 .find({
                     clinic_id: ObjectID(clinicId)
@@ -46,10 +62,60 @@ module.exports = function(app, db) {
         }
 
         if (req.query.clinicId) {
-            getDoctorCategories(req.query.clinicId);
+            getAppointmentDoctorCategories(req.query.clinicId);
         } else {
             checkRequestToken(req, res, (decoded) => {
-                getDoctorCategories(decoded.id);
+                db.collection('doctor-categories')
+                    .find({
+                        clinic_id: ObjectID(decoded.id)
+                    })
+                    .toArray((err, categories) => {
+                        if (err) {
+                            res.status(500).send(err);
+                        } else {
+                            if (categories && categories.length) {
+                                const categoryIds = [];
+
+                                categories.forEach((category, index) => {
+                                    categoryIds.push(category._id);
+                                });
+
+                                db.collection('doctors')
+                                    .find({
+                                        category_id: {
+                                            $in: categoryIds
+                                        }
+                                    })
+                                    .toArray((err, doctors) => {
+                                        if (err) {
+                                            res.status(500).send(err);
+                                        } else {
+                                            categories.forEach((category) => {
+                                                if (!category.doctors) {
+                                                    category.doctors = {
+                                                        active: 0,
+                                                        invited: 0
+                                                    };
+                                                }
+                                                doctors.forEach((doctor) => {
+                                                    if (doctor.category_id.equals(category._id)) {
+                                                        if (doctor.status.toLowerCase() === 'invited') {
+                                                            category.doctors.invited ++;
+                                                        } else if (doctor.status.toLowerCase() === 'active'){
+                                                            category.doctors.active ++;
+                                                        }
+                                                    }
+                                                })
+                                            });
+
+                                            res.status(200).send(categories);
+                                        }
+                                    });
+                            } else {
+                                res.staus(200).send([]);
+                            }
+                        }
+                    });
             });
         }
     });

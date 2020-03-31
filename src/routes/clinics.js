@@ -1,5 +1,6 @@
 const { ObjectID } = require('mongodb');
 const bcrypt = require('bcrypt');
+const {checkEmail} = require('../helpers/account');
 
 module.exports = function(app, db) {
     const clinicsCollection = db.collection('clinics');
@@ -85,22 +86,28 @@ module.exports = function(app, db) {
             return;
         }
 
-        const alias = req.body.name.trim().toLowerCase().replace(/\s/gi, '-').replace(/[#№]/gi, '');
+        checkEmail(db, req.body.email, (err, isEmailUnique) => {
+            if (isEmailUnique) {
+                const alias = req.body.name.trim().toLowerCase().replace(/\s/gi, '-').replace(/[#№]/gi, '');
 
-        const clinic = {
-            name: req.body.name,
-            alias,
-            phoneNumber: req.body.phoneNumber,
-            address: req.body.address,
-            email: req.body.email,
-            password: bcrypt.hashSync(req.body.password, salt)
-        };
+                const clinic = {
+                    name: req.body.name,
+                    alias,
+                    phoneNumber: req.body.phoneNumber,
+                    address: req.body.address,
+                    email: req.body.email,
+                    password: bcrypt.hashSync(req.body.password, salt)
+                };
 
-        clinicsCollection.insert(clinic, (err, result) => {
-            if (err) {
-                res.status(500).send(err);
+                clinicsCollection.insert(clinic, (err, result) => {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else {
+                        res.status(200).send(result.ops[0]);
+                    }
+                });
             } else {
-                res.status(200).send(result.ops[0]);
+                res.status(406).send(err);
             }
         });
     });

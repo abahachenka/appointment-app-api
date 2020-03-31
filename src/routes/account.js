@@ -144,7 +144,7 @@ module.exports = function(app, db) {
                 const query = {"_id": ObjectID(accountId)};
                 const newValues = {$set: {
                     password: bcrypt.hashSync(password, salt),
-                    status: "Active"
+                    status: "active"
                 }};
 
                 db.collection('doctors')
