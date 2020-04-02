@@ -61,13 +61,15 @@ module.exports = function(app, db) {
                         res.status(500).send(err);
                     } else {
                         const categoryId = account.category_id;
-                        db.collection('doctor-categories').findOne({"_id": categoryId}, (err, category) => {
-                            if (err) {
-                                res.status(500).send(err);
-                            } else {
-                                res.status(200).send({...account, categoryName: category.categoryName});
-                            }
-                        });
+                        db.collection('doctor-categories')
+                            .findOne({"_id": categoryId}, (err, category) => {
+                                if (err) {
+                                    res.status(500).send(err);
+                                } else {
+                                    const accountType = account.clinic_id ? 'doctor' : 'clinic';
+                                    res.status(200).send({...account, accountType, categoryName: category.categoryName});
+                                }
+                            });
                     }
             });
         };

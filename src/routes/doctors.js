@@ -166,14 +166,12 @@ module.exports = function(app, db) {
         let transporter = nodeMailer.createTransport({
             service: 'gmail',
             auth: {
-                // should be replaced with real sender's account
-                user: 'info.appointment.by@gmail.com',
-                pass: 'solid9557727l'
+                user: process.env.EMAIL,
+                pass: process.env.EMAIL_PASS
             }
         });
 
         let mailOptions = {
-            // should be replaced with real recipient's account
             to: toEmail,
             subject: 'Doctor Account Invitation',
             html: `
