@@ -59,5 +59,33 @@ const checkEmail = (db, email, cb) => {
         });
 };
 
+const validateEmail = (email) => {
+    const emailRule = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+    return emailRule.test(email);
+}
+
+const validatePassword = (password) => {
+    const passRule = /^(?=.*?[A-Z])(?=(.*[a-z]){1,})(?=(.*[\d]){1,})(?=(.*[\W]){1,})(?!.*\s).{8,}$/g;
+    let error = '';
+    let isValid = passRule.test(password);
+
+    if (!isValid) {
+        error = `Password must be: <br/>
+            -At least one upper case English letter<br/>
+            -At least one lower case English letter<br/>
+            -At least one digit<br/>
+            -At least one special character<br/>
+            -Minimum eight characters in length`;
+    }
+
+    return {
+        isValid, 
+        error
+    };
+}
+
 module.exports.checkRequestToken = checkRequestToken;
 module.exports.checkEmail = checkEmail;
+module.exports.validateEmail = validateEmail;
+module.exports.validatePassword = validatePassword;

@@ -1,6 +1,10 @@
 const { ObjectID } = require('mongodb');
 const bcrypt = require('bcrypt');
-const {checkEmail} = require('../helpers/account');
+const {
+    checkEmail, 
+    validateEmail, 
+    validatePassword
+} = require('../helpers/account');
 
 module.exports = function(app, db) {
     const clinicsCollection = db.collection('clinics');
@@ -76,8 +80,20 @@ module.exports = function(app, db) {
             return;
         }
 
+        if (validateEmail(req.body.email) === false) {
+            res.status(406).send('Email is not valid');
+            return;
+        }
+
         if (!req.body.password) {
             res.status(406).send('Password must be specified');
+            return;
+        }
+
+        const passValidationResult = validatePassword(req.body.password);
+
+        if (!passValidationResult.isValid) {
+            res.status(406).send(passValidationResult.error);
             return;
         }
 
