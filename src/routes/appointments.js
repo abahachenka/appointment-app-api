@@ -143,7 +143,7 @@ module.exports = function(app, db) {
         if (req.query.categoryId) {
             query = {
                 category_id: ObjectID(req.query.categoryId),
-                status: 'Active'
+                status: 'active'
             };
 
             getCategoryAllDoctorAppointments(query);

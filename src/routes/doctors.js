@@ -1,7 +1,11 @@
 const { ObjectID } = require('mongodb');
 const nodeMailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
-const {checkRequestToken, checkEmail} = require('../helpers/account');
+const {
+    checkRequestToken, 
+    checkEmail,
+    validateEmail
+} = require('../helpers/account');
 const SECRET = process.env.SECRET_KEY;
 
 module.exports = function(app, db) {
@@ -37,8 +41,6 @@ module.exports = function(app, db) {
                                 });
                         }
                     });
-
-                
             } else {
                 res.status(406).send('Category name is not provided');
             }
@@ -112,7 +114,7 @@ module.exports = function(app, db) {
                                         }
                                     });
                             } else {
-                                res.staus(200).send([]);
+                                res.status(200).send([]);
                             }
                         }
                     });
@@ -126,8 +128,9 @@ module.exports = function(app, db) {
             const categoryAlias = req.params.categoryAlias;
             const query = {
                 clinic_id: ObjectID(clinicId),
-                categoryName: categoryAlias
+                categoryAlias: categoryAlias
             };
+
 
             db.collection('doctor-categories')
                 .findOne(query, (err, item) => {
@@ -191,9 +194,34 @@ module.exports = function(app, db) {
 
     app.post('/doctor-categories/:categoryId/doctors/invite', (req, res) => {
         checkRequestToken(req, res, (decoded) => {
-            if (req.body.email) {
-                checkEmail(db, req.body.email, (err, isEmailUnique) => {
+            if (!req.body.title) {
+                res.status(406).send('Title must be specified');
+                return;
+            }
 
+            if (!req.body.firstName) {
+                res.status(406).send('First name must be specified');
+                return;
+            }
+
+            if (!req.body.lastName) {
+                res.status(406).send('Last name must be specified');
+                return;
+            }
+
+            if (!req.body.room) {
+                res.status(406).send('Room must be specified');
+                return;
+            }
+
+            if (!req.body.email) {
+                res.status(406).send('Email must be specified');
+                return;
+            } else if (validateEmail(req.body.email) === false) {
+                res.status(406).send('Email is not valid');
+                return;
+            } else {
+                checkEmail(db, req.body.email, (err, isEmailUnique) => {
                     if (isEmailUnique) {
                         const clinicId = decoded.id;
                         const categoryId = req.params.categoryId;
@@ -215,7 +243,7 @@ module.exports = function(app, db) {
                                 } else {
                                     const record = resp.ops[0];
                                     const token = jwt.sign({ id: record._id }, SECRET, {
-                                        expiresIn: 172800 // expires in 48 hours
+                                        expiresIn: 669600 // expires in 7 days
                                     });
                                     const acceptInvitationLink = process.env.UI_SERVER_URL + '/accept-invitation/' + token;
                                     sendInvitation(req.body.email, acceptInvitationLink);

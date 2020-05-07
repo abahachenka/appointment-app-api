@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const SECRET = process.env.SECRET_KEY;
 const { ObjectID } = require('mongodb');
+const { validatePassword } = require('../helpers/account');
 
 module.exports = function(app, db) {
     const checkAccountPassword = (res, account, enteredPassword) => {
@@ -49,7 +50,7 @@ module.exports = function(app, db) {
         });
     });
 
-    app.post('/auth/account', (req, res) => {
+    app.get('/auth/account', (req, res) => {
         const token = req.headers['x-access-token'];
 
         const loadDoctorAccount = (id) => {
@@ -138,7 +139,20 @@ module.exports = function(app, db) {
     app.put('/auth/accept-invitation', (req, res) => {
         const token = req.body.token;
         const password = req.body.password;
+        const confirmPassword = req.body.confirmPassword;
         const salt = bcrypt.genSaltSync(10);
+
+        if (password !== confirmPassword) {
+            res.status(406).send('Passwords don`t match');
+            return;
+        }
+        
+        const passValidationResult = validatePassword(req.body.password);
+
+        if (!passValidationResult.isValid) {
+            res.status(406).send(passValidationResult.error);
+            return;
+        }
 
         jwt.verify(token, SECRET, (err, decoded) => {
             if (decoded) {

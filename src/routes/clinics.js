@@ -8,7 +8,7 @@ const {
 
 module.exports = function(app, db) {
     const clinicsCollection = db.collection('clinics');
-    const addressCoverCollection = db.collection('address-cover');
+    const addressCoverCollection = db.collection('clinic-address-cover');
 
     // Get all clinics
     app.get('/clinics', (req, res) => {
